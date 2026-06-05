@@ -1,0 +1,23 @@
+name: Actualizar CSV
+
+on:
+  repository_dispatch:
+    types: [actualizar-csv]
+
+jobs:
+  actualizar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Crear archivo CSV
+        run: |
+          echo "${{ github.event.client_payload.csv_base64 }}" | base64 -d > datos.csv
+          
+      - name: Commit y Push
+        run: |
+          git config user.name "Power Automate"
+          git config user.email "automate@example.com"
+          git add datos.csv
+          git commit -m "Actualizar CSV desde Power Automate" || echo "Sin cambios"
+          git push
