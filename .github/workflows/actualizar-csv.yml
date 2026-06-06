@@ -13,14 +13,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Descargar CSV desde URL
+      - name: Descargar CSV desde URL de OneDrive
         run: |
-          curl -L "${{ github.event.client_payload.csv_url }}" -o datos.csv
+          # 1. Obtener la URL original desde el payload
+          URL_ORIGINAL="${{ github.event.client_payload.csv_url }}"
+          
+          # 2. Convertir la URL a formato Base64 seguro para la API de OneDrive
+          URL_BASE64=$(echo -n "$URL_ORIGINAL" | base64 -w0 | tr -d '=' | tr '/+' '_-')
+          
+          # 3. Descargar el archivo real usando el endpoint de la API pública
+          curl -sL "https://onedrive.com{URL_BASE64}/root/content" -o datos.csv
 
       - name: Verificar descarga
         run: |
           echo "Filas esperadas: ${{ github.event.client_payload.row_count }}"
-          wc -l datos.csv
+          if [ -f datos.csv ]; then
+            wc -l datos.csv
+          else
+            echo "Error: El archivo datos.csv no se descargó correctamente."
+            exit 1
+          fi
 
       - name: Commit y Push
         run: |
