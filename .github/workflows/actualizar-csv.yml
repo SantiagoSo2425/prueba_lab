@@ -10,14 +10,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Crear archivo CSV
+      - name: Descargar CSV desde URL
         run: |
-          echo "${{ github.event.client_payload.csv_base64 }}" | base64 -d > datos.csv
+          curl -L "${{ github.event.client_payload.csv_url }}" -o datos.csv
+          
+      - name: Verificar descarga
+        run: |
+          echo "Filas esperadas: ${{ github.event.client_payload.row_count }}"
+          wc -l datos.csv
           
       - name: Commit y Push
         run: |
           git config user.name "Power Automate"
           git config user.email "automate@example.com"
           git add datos.csv
-          git commit -m "Actualizar CSV desde Power Automate" || echo "Sin cambios"
+          git commit -m "Actualizar CSV desde Power Automate - ${{ github.event.client_payload.timestamp }}" || echo "Sin cambios"
           git push
