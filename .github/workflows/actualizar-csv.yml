@@ -13,9 +13,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Ver payload
-        run: echo '${{ toJson(github.event.client_payload) }}'
-
       - name: Descargar CSV desde URL
         run: |
           curl -L "${{ github.event.client_payload.csv_url }}" -o datos.csv
