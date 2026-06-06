@@ -13,22 +13,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Descargar CSV desde URL de OneDrive/SharePoint
+      - name: Descargar CSV desde OneDrive Personal
         run: |
-          # 1. Obtener la URL institucional desde el payload
+          # 1. Obtener la URL personal desde el payload
           URL_ORIGINAL="${{ github.event.client_payload.csv_url }}"
           
-          # 2. Limpiar parámetros web y añadir la bandera de descarga directa de Microsoft
-          URL_LIMPIA=$(echo "$URL_ORIGINAL" | sed 's/?.*//')
-          URL_DESCARGA="${URL_LIMPIA}?download=1"
+          # 2. Convertir la URL a formato Base64 seguro para la API pública de OneDrive
+          URL_BASE64=$(echo -n "$URL_ORIGINAL" | base64 -w0 | tr -d '=' | tr '/+' '_-')
           
-          # 3. Descargar el archivo procesando redirecciones (-L)
-          curl -L "$URL_DESCARGA" -o datos.csv
+          # 3. Descargar el contenido crudo del archivo (.csv)
+          curl -sL "https://onedrive.com{URL_BASE64}/root/content" -o datos.csv
 
       - name: Verificar descarga
         run: |
           echo "Filas esperadas: ${{ github.event.client_payload.row_count }}"
           if [ -f datos.csv ]; then
+            # Muestra las primeras líneas para asegurar que sea texto CSV y no HTML de error
+            head -n 5 datos.csv
+            echo "Total de líneas obtenidas:"
             wc -l datos.csv
           else
             echo "Error: El archivo datos.csv no se descargó correctamente."
@@ -40,6 +42,6 @@ jobs:
           git config user.name "Power Automate"
           git config user.email "automate@example.com"
           git add datos.csv
-          # Realiza el commit solo si hay cambios en el archivo para evitar romper el flujo
+          # Evita errores si el archivo no sufrió cambios reales
           git commit -m "Actualizar CSV desde Power Automate - ${{ github.event.client_payload.timestamp }}" || echo "Sin cambios"
           git push
